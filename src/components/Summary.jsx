@@ -1,10 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { useState, useEffect } from "react";
 import Loader from "./Loader";
+import { gemeniModel } from "../../Firebase/Config";
 
 function Summary({ file }) {
 
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyBv5L19S9KHe21zFTUDYAjp0A-UCtl7uYw" });
     const [summary, setSummary] = useState("");
     const [status, setStatus] = useState("idle");
 
@@ -14,26 +14,43 @@ function Summary({ file }) {
         try {
             const contents = [
                 {
-                    text: `
-                    Summarize the document in one short paragraph (less than 100 words). Use just plain text with no markdowns or html tags.
-                ` },
-                {
-                    inlineData: {
-                        mimeType: file.type,
-                        data: file.file
-                    }
+                    role: "user",
+                    parts: [
+                        {
+                            text: `
+                        Summarize the document in one short paragraph (less than 100 words). Use just plain text with no markdowns or html tags.
+                      `
+                        },
+                        {
+                            inlineData: {
+                                mimeType: file.type,
+                                data: file.file
+                            }
+                        }
+                    ]
                 }
             ];
 
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+
+            /*    const response = await ai.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: contents
+                }); */
+
+
+            console.log("Sending contents:", contents);
+            const response = await gemeniModel.generateContent({
                 contents: contents
             });
 
+            console.log("Gemini raw response:", response);
             setStatus('success');
-            setSummary(response.text)
+            const text = response.response?.candidates?.[0]?.content?.parts?.[0]?.text || "No summary found.";
+            setSummary(text);
+
 
         } catch (error) {
+            console.error("Summary error:", error);
             setStatus('error');
         }
     }

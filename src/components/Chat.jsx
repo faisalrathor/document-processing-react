@@ -1,10 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import './Chat.css'
 import { useState } from 'react'
+import { gemeniModel } from "../../Firebase/Config";
 
 function Chat({ file }) {
-
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyBv5L19S9KHe21zFTUDYAjp0A-UCtl7uYw" });
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -18,25 +17,40 @@ function Chat({ file }) {
             try {
                 const contents = [
                     {
-                        text: `
-                        Answer this question about the attached document: ${input}
-                        Answer as a chatbot with short messages and text only (nor mark downs, tags, symbols)
-                        Chat History: ${JSON.stringify(messages)}
-                    ` },
-                    {
-                        inlineData: {
-                            mimeType: file.type,
-                            data: file.file
-                        }
+                        role: "user",
+                        parts: [
+                            {
+                                text: `
+                            Answer this question about the attached document: ${input}
+                            Answer as a chatbot with short messages and text only (no mark downs, tags, symbols)
+                            Chat History: ${JSON.stringify(messages)}
+                          `
+                            },
+                            {
+                                inlineData: {
+                                    mimeType: file.type,
+                                    data: file.file
+                                }
+                            }
+                        ]
                     }
                 ];
 
-                const response = await ai.models.generateContent({
-                    model: "gemini-2.5-flash",
+
+                /*     const response = await ai.models.generateContent({
+                         model: "gemini-2.5-flash",
+                         contents: contents
+                     });  */
+
+                console.log("Sending contents:", contents);
+                const response = await gemeniModel.generateContent({
                     contents: contents
                 });
 
-                chatMessages = [...chatMessages.filter(msg => msg.role != 'loader'), { role: "model", text: response.text }];
+                console.log("Gemini raw response:", response);
+                const text = response.response?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry! Error from Server. Try later.";
+
+                chatMessages = [...chatMessages.filter(msg => msg.role != 'loader'), { role: "model", text: text }];
                 setMessages(chatMessages);
 
 
